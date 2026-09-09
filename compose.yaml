@@ -1,0 +1,84 @@
+name: smtp-relay
+
+services:
+  postfix:
+    build:
+      context: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      TLS_CERT_PATH: /etc/letsencrypt/live/${SMTP_HOSTNAME}/fullchain.pem
+      TLS_KEY_PATH: /etc/letsencrypt/live/${SMTP_HOSTNAME}/privkey.pem
+    ports:
+      - "${SMTP_LISTEN_ADDR:-0.0.0.0}:587:587/tcp"
+    volumes:
+      - letsencrypt:/etc/letsencrypt:ro
+      - postfix-queue:/var/spool/postfix
+      - postfix-sasl:/var/lib/sasl2
+      - ./data/relay-policy:/etc/postfix/relay-policy
+      - postfix-logs:/var/log/postfix
+      - ./secrets:/run/secrets:ro
+    healthcheck:
+      test: ["CMD-SHELL", "postfix status >/dev/null 2>&1 && test -s /var/log/postfix/mail.log"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    security_opt:
+      - no-new-privileges:true
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "${HTTP_LISTEN_ADDR:-0.0.0.0}:80:80/tcp"
+    volumes:
+      - certbot-webroot:/var/www/certbot:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    security_opt:
+      - no-new-privileges:true
+
+  certbot-renew:
+    image: certbot/certbot:v3.1.0
+    restart: unless-stopped
+    volumes:
+      - letsencrypt:/etc/letsencrypt
+      - certbot-webroot:/var/www/certbot
+    entrypoint: /bin/sh
+    command:
+      - -ec
+      - |
+        while :; do
+          certbot renew --webroot -w /var/www/certbot --quiet || true
+          sleep 12h
+        done
+
+  certbot-init:
+    image: certbot/certbot:v3.1.0
+    profiles: ["bootstrap"]
+    env_file: .env
+    volumes:
+      - letsencrypt:/etc/letsencrypt
+      - certbot-webroot:/var/www/certbot
+    entrypoint: /bin/sh
+    command:
+      - -ec
+      - |
+        test -n "$$LETSENCRYPT_EMAIL"
+        test -n "$$SMTP_HOSTNAME"
+        certbot certonly --webroot -w /var/www/certbot \
+          --email "$$LETSENCRYPT_EMAIL" --agree-tos --no-eff-email \
+          --keep-until-expiring -d "$$SMTP_HOSTNAME"
+
+volumes:
+  letsencrypt:
+  certbot-webroot:
+  postfix-queue:
+  postfix-sasl:
+
+  postfix-logs:
