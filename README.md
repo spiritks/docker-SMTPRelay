@@ -38,6 +38,18 @@ The Microsoft 365 account used by this relay must have Authenticated SMTP enable
 
 The password is supplied as an argument and can remain in your terminal history. For production, prefer an interactive shell plus `saslpasswd2` or a secrets manager.
 
+### SASL database repair
+
+The SASL credential store is a Berkeley DB file. It must be created by `create-smtp-user`/`saslpasswd2`, not by `touch`. If Postfix logs `unable to open Berkeley db ... Invalid argument`, rebuild the image containing the fix and restart the relay. An empty database is removed automatically on startup:
+
+`docker compose up -d --build --force-recreate postfix`
+
+If the database is non-empty but damaged, save the old file and deliberately remove all inbound SMTP users with:
+
+`docker compose exec postfix repair-sasl-db --delete-all-users`
+
+Then recreate every SMTP account and its sender policy. The command preserves a timestamped copy alongside the database in the `postfix-sasl` volume.
+
 ## Per-user sender authorization
 
 Every SMTP-authenticated account must be explicitly assigned its permitted envelope `MAIL FROM` address(es). A user with no assignment is denied with `553 5.7.1 Sender address rejected: not owned by user`.

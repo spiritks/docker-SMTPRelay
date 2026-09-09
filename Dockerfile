@@ -16,8 +16,9 @@ RUN apt-get update \
 COPY docker/postfix/entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY docker/postfix/create-smtp-user.sh /usr/local/bin/create-smtp-user
 COPY docker/postfix/set-smtp-senders.sh /usr/local/bin/set-smtp-senders
+COPY docker/postfix/repair-sasl-db.sh /usr/local/bin/repair-sasl-db
 COPY docker/postfix/rsyslog.conf /etc/rsyslog.d/10-postfix.conf
-RUN chmod 0755 /usr/local/bin/entrypoint.sh /usr/local/bin/create-smtp-user /usr/local/bin/set-smtp-senders \
+RUN chmod 0755 /usr/local/bin/entrypoint.sh /usr/local/bin/create-smtp-user /usr/local/bin/set-smtp-senders /usr/local/bin/repair-sasl-db \
  && mkdir -p /var/log/postfix /var/lib/sasl2 \
  && chown postfix:sasl /var/lib/sasl2
 

@@ -45,9 +45,17 @@ chmod 0640 /etc/postfix/relay-policy/sender_login_maps
 postmap /etc/postfix/relay-policy/sender_login_maps
 chown root:postfix /etc/postfix/relay-policy/sender_login_maps.db
 chmod 0640 /etc/postfix/relay-policy/sender_login_maps.db
-[ -e /var/lib/sasl2/sasldb2 ] || touch /var/lib/sasl2/sasldb2
-chown postfix:sasl /var/lib/sasl2/sasldb2
-chmod 0640 /var/lib/sasl2/sasldb2
+# saslpasswd2 creates a valid Berkeley DB file on first user creation. Never
+# create it with touch: an empty regular file is not a Berkeley DB and causes
+# Cyrus SASL to fail every AUTH attempt with "Invalid argument".
+if [ -e /var/lib/sasl2/sasldb2 ] && [ ! -s /var/lib/sasl2/sasldb2 ]; then
+  echo "WARNING: removing empty SASL database; create the SMTP users again" >&2
+  rm -f /var/lib/sasl2/sasldb2
+fi
+if [ -e /var/lib/sasl2/sasldb2 ]; then
+  chown postfix:sasl /var/lib/sasl2/sasldb2
+  chmod 0640 /var/lib/sasl2/sasldb2
+fi
 
 cat >/etc/postfix/sasl/smtpd.conf <<'EOF'
 pwcheck_method: auxprop
