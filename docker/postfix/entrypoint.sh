@@ -110,6 +110,12 @@ postconf -e "smtp_sasl_auth_enable = $UPSTREAM_SASL_ENABLE"
 postconf -e 'smtp_sasl_security_options = noanonymous'
 postconf -e 'smtp_sasl_tls_security_options = noanonymous'
 postconf -e 'smtp_sasl_password_maps = hash:/etc/postfix/sasl_passwd'
+# The Postfix smtp(8) delivery daemon is chrooted by Debian's default master.cf.
+# It therefore cannot read the container's /etc/resolv.conf. Without this copy,
+# getent works in `docker compose exec`, but outgoing mail fails with dsn=4.4.3.
+mkdir -p /var/spool/postfix/etc
+cp -L /etc/resolv.conf /var/spool/postfix/etc/resolv.conf
+chmod 0644 /var/spool/postfix/etc/resolv.conf
 postconf -e 'queue_run_delay = 10s'
 postconf -e 'minimal_backoff_time = 10s'
 postconf -e 'maximal_backoff_time = 10m'
