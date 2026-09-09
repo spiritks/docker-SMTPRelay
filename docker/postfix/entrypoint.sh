@@ -47,9 +47,17 @@ fi
 mkdir -p /var/log/postfix /var/lib/sasl2 /etc/postfix/relay-policy
 chown postfix:sasl /var/lib/sasl2
 # This persistent map binds each authenticated SMTP login to allowed MAIL FROM values.
+# The directory is a host bind mount. Postfix check rejects configuration files
+# below /etc/postfix that are writable by a non-root owner, including .gitkeep.
+chown root:postfix /etc/postfix/relay-policy
+chmod 0750 /etc/postfix/relay-policy
 touch /etc/postfix/relay-policy/sender_login_maps
 chown root:postfix /etc/postfix/relay-policy/sender_login_maps
 chmod 0640 /etc/postfix/relay-policy/sender_login_maps
+if [ -e /etc/postfix/relay-policy/.gitkeep ]; then
+  chown root:postfix /etc/postfix/relay-policy/.gitkeep
+  chmod 0640 /etc/postfix/relay-policy/.gitkeep
+fi
 postmap /etc/postfix/relay-policy/sender_login_maps
 chown root:postfix /etc/postfix/relay-policy/sender_login_maps.db
 chmod 0640 /etc/postfix/relay-policy/sender_login_maps.db

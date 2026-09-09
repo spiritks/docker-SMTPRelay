@@ -7,6 +7,12 @@ services:
     environment:
       TLS_CERT_PATH: /etc/letsencrypt/live/${SMTP_HOSTNAME}/fullchain.pem
       TLS_KEY_PATH: /etc/letsencrypt/live/${SMTP_HOSTNAME}/privkey.pem
+    # Do not use Docker's embedded 127.0.0.11 resolver for the Microsoft
+    # upstream. It can return transient NXDOMAIN/SERVFAIL while the host DNS
+    # succeeds, causing Postfix to defer mail with dsn=4.4.3.
+    dns:
+      - ${DNS_SERVER_1:-1.1.1.1}
+      - ${DNS_SERVER_2:-8.8.8.8}
     ports:
       - "${SMTP_LISTEN_ADDR:-0.0.0.0}:587:587/tcp"
     volumes:

@@ -11,7 +11,8 @@ RUN apt-get update \
       sasl2-bin \
  && rm -rf /var/lib/apt/lists/* \
  && sed -ri 's|^smtp[[:space:]]+inet[[:space:]]+n|smtp      inet  n|' /etc/postfix/master.cf \
- && sed -ri 's|^submission[[:space:]]+inet[[:space:]]+n|submission inet n|' /etc/postfix/master.cf
+ && sed -ri 's|^submission[[:space:]]+inet[[:space:]]+n|submission inet n|' /etc/postfix/master.cf \
+ && sed -ri '/^[[:space:]]*module\(load="imklog"/s/^/# Disabled in an unprivileged container: /' /etc/rsyslog.conf
 
 COPY docker/postfix/entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY docker/postfix/create-smtp-user.sh /usr/local/bin/create-smtp-user

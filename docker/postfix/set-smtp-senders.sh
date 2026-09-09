@@ -19,6 +19,8 @@ case "$username" in
 esac
 
 mkdir -p "$policy_dir"
+chown root:postfix "$policy_dir"
+chmod 0750 "$policy_dir"
 touch "$map_file"
 chown root:postfix "$map_file"
 chmod 0640 "$map_file"
