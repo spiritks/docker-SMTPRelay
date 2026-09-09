@@ -17,6 +17,10 @@ required SMTP_PORT
 : "${TRUSTED_NETWORKS:=127.0.0.0/8 [::1]/128}"
 : "${UPSTREAM_TLS_SECURITY:=verify}"
 : "${UPSTREAM_SASL_ENABLE:=no}"
+# Microsoft 365 submission is reachable over IPv4. Docker's embedded resolver can
+# return a temporary failure while resolving an AAAA record, which makes Postfix
+# defer the message before it attempts the usable A record.
+: "${SMTP_INET_PROTOCOLS:=ipv4}"
 : "${TLS_CERT_PATH:=/etc/letsencrypt/live/${SMTP_HOSTNAME}/fullchain.pem}"
 : "${TLS_KEY_PATH:=/etc/letsencrypt/live/${SMTP_HOSTNAME}/privkey.pem}"
 
@@ -26,6 +30,10 @@ if [ "$UPSTREAM_TLS_SECURITY" != "encrypt" ] && [ "$UPSTREAM_TLS_SECURITY" != "v
 fi
 if [ "$UPSTREAM_SASL_ENABLE" != "yes" ] && [ "$UPSTREAM_SASL_ENABLE" != "no" ]; then
   echo "ERROR: UPSTREAM_SASL_ENABLE must be yes or no" >&2
+  exit 64
+fi
+if [ "$SMTP_INET_PROTOCOLS" != "ipv4" ] && [ "$SMTP_INET_PROTOCOLS" != "ipv6" ] && [ "$SMTP_INET_PROTOCOLS" != "all" ]; then
+  echo "ERROR: SMTP_INET_PROTOCOLS must be ipv4, ipv6, or all" >&2
   exit 64
 fi
 
@@ -72,7 +80,7 @@ postconf -e 'mydestination ='
 postconf -e "mynetworks = $TRUSTED_NETWORKS"
 postconf -e "relayhost = [$SMTP_HOST]:$SMTP_PORT"
 postconf -e 'inet_interfaces = all'
-postconf -e 'inet_protocols = all'
+postconf -e "inet_protocols = $SMTP_INET_PROTOCOLS"
 postconf -e 'smtpd_relay_restrictions = permit_mynetworks, permit_sasl_authenticated, defer_unauth_destination'
 postconf -e 'smtpd_recipient_restrictions = permit_mynetworks, permit_sasl_authenticated, reject_unauth_destination'
 postconf -e 'smtpd_sasl_auth_enable = yes'

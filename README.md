@@ -96,7 +96,7 @@ Queue settings: `queue_run_delay=10s`, `minimal_backoff_time=10s`, `maximal_back
 
 ## Microsoft 365 authenticated upstream
 
-The supplied `.env.example` sets `SMTP_HOST=smtp.office365.com`, `SMTP_PORT=587`, `UPSTREAM_TLS_SECURITY=verify`, and `UPSTREAM_SASL_ENABLE=yes`. The relay refuses to start if `secrets/sasl_passwd` is missing or empty.
+The supplied `.env.example` sets `SMTP_HOST=smtp.office365.com`, `SMTP_PORT=587`, `UPSTREAM_TLS_SECURITY=verify`, `UPSTREAM_SASL_ENABLE=yes`, and `SMTP_INET_PROTOCOLS=ipv4`. IPv4 avoids Docker embedded-DNS deferrals such as `Name service error for name=smtp.office365.com type=AAAA`. Set `SMTP_INET_PROTOCOLS=all` only when IPv6 and the Docker resolver are known to work. The relay refuses to start if `secrets/sasl_passwd` is missing or empty.
 
 If you deliberately change to another upstream, update both `SMTP_HOST`/`SMTP_PORT` and the bracketed endpoint on the only line in `secrets/sasl_passwd`, then restart Postfix:
 
