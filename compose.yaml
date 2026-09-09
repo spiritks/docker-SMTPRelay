@@ -46,16 +46,20 @@ services:
   certbot-renew:
     image: certbot/certbot:v3.1.0
     restart: unless-stopped
+    env_file: .env
     volumes:
       - letsencrypt:/etc/letsencrypt
       - certbot-webroot:/var/www/certbot
+      - ./docker/certbot/renew-if-needed.sh:/usr/local/bin/renew-if-needed:ro
     entrypoint: /bin/sh
     command:
       - -ec
       - |
         while :; do
-          certbot renew --webroot -w /var/www/certbot --quiet || true
-          sleep 12h
+          if ! /bin/sh /usr/local/bin/renew-if-needed; then
+            echo "Certificate validation/renewal failed; will retry in 24 hours." >&2
+          fi
+          sleep 24h
         done
 
   certbot-init:

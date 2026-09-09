@@ -90,11 +90,19 @@ If you deliberately change to another upstream, update both `SMTP_HOST`/`SMTP_PO
 
 `docker-compose up -d --build postfix`
 
-## Certificate renewal
+## Certificate validation and renewal
 
-`certbot-renew` checks every 12 hours. Postfix reloads hourly, so a renewed certificate is loaded without manual action. Check certificate expiration:
+`certbot-renew` validates the active leaf certificate once per 24 hours. It logs its UTC expiry time and remaining lifetime to `docker-compose logs certbot-renew`.
+
+A certificate with more than 7 days remaining is left untouched. At 7 days or less, the service explicitly requests a replacement. A missing or invalid certificate also causes a replacement request; errors are retained in the container logs and retried after 24 hours. Postfix reloads hourly, so it picks up a renewed certificate without recreating the relay container.
+
+Check the active certificate expiry directly:
 
 `docker-compose run --rm certbot certificates`
+
+Watch validation and renewal decisions:
+
+`docker-compose logs -f certbot-renew`
 
 ## Verification
 
